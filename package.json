@@ -1,0 +1,29 @@
+{
+  "name": "socketioandamqplib",
+  "version": "0.0.1",
+  "description": "socket io and amqplib chat server",
+  "main": "app",
+  "bin": {
+    "socketioandamqplib": "server.js"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "start": "node app"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sathrak/socketioandamqplib.git"
+  },
+  "keywords": [
+    "chat"
+  ],
+  "author": "Sathrak Paldurai K",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sathrak/socketioandamqplib/issues"
+  },
+  "homepage": "https://github.com/sathrak/socketioandamqplib#readme"
+}
+

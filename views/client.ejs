@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html dir="ltr">
+	<head>
+		<title>Socket.IO and amqplib chat</title>
+		<link rel="stylesheet" href="style.css">
+		<style>			
+			html,
+			body,
+			#app {
+				height: 100%;
+				width: 100%;
+				overflow: hidden;
+				padding: 0;
+				margin: 0;
+			}
+			
+			#app {
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+			#send { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+			#send input { border: 0; padding: 10px; width: 85%; margin-right: .5%; }
+			#send button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }			
+		</style>
+		<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+		<script src="http://code.jquery.com/jquery-1.11.1.js"></script>	
+		<script>      
+            var SIGNALING_SERVER = "http://localhost:8081/kschat";         
+			var Loginid = '<%= uid %>';
+			var Receiver = '<%= rid %>';
+			var clientURL = 'http://localhost:8081/kschat';				
+			var random = '<%= random %>';		
+			var option = {
+				reconnect: false,
+				'try multiple transports': false,
+				transports: ['websocket'],
+				'query':'token=<%= tokenId %>&ksId='+Loginid
+			};
+			var socket = io.connect(SIGNALING_SERVER,option);
+			socket.on('connect',function(){
+				console.log("Server Connect!");
+			});
+			
+			function init() {
+				socket.on("error", function(error) {
+					console.log("User's token has expired",error);
+					if (error.type == "UnauthorizedError" || error.code == "invalid_token") {
+						// redirect user to login page perhaps?
+						console.log("User's token has expired");
+					}
+				});
+				
+				socket.on("unauthorized", function(error, callback) {
+					if (error.data.type == "UnauthorizedError" || error.data.code == "invalid_token") {
+						// redirect user to login page perhaps or execute callback:
+						callback();				
+						console.log("1User's token has expired");
+					}
+				});		
+				
+				socket.on('disconnect', function() {
+                    console.log("Disconnected from signaling server");                    
+                });
+				
+								
+				var div = $('#gmchat div');
+				var print = function(message,time,flag){
+					if(flag ==1){				
+						div.append($('<div class="container"><img src="/w3images/bandmember.jpg" alt="Avatar" style="width:100%;"><p>'+message+'</p><span class="time-right '+time+'">'+time+'</span></div>'));
+					}else if(flag ==2){
+						div.append($('<div class="container darker"><img src="/w3images/bandmember.jpg" alt="Avatar" class="right" style="width:100%;"><p>'+message+'</p><span class="time-right '+time+'">'+time+'</span></div>'));
+					}else {
+						div.append($("<div style='height:40px;'>").text(message));
+					}				
+					div.scrollTop(div.scrollTop()+10000);
+				}
+					
+				$(document).on("click", "#SEND", function(){				
+					console.log("message============");
+					var time = Math.floor(new Date().getTime()/1000);
+					socket.emit('Send',{uId:Loginid,pId:Receiver,msg:$("#MSG").val(),rno:random,time:time},function(resp){
+						$("#MSG").val('');
+					});
+					
+				});	
+		
+				socket.on('RESPRECEIVER', function(data,callback){
+					console.log("RESPRECEIVER====",data);
+					callback({RESPONSE:"RESPRECEIVER Success!",uId:Loginid});
+					var utime = Math.floor(new Date().getTime()/1000);
+					if(data.RC==1 && data.MSG){
+						var message = data.MSG[0];
+						var msgtime = message.msgTime;					
+						var msgs = message.msg;
+						var d = new Date(msgtime);		
+						var time = d.toLocaleTimeString() // 1:35:07 PM
+						var day = d.toLocaleDateString()
+			
+						if(message.uId == Loginid && message.pId ==Receiver){	
+							$('._9tCEa').append('<div class="vW7d1"><span></span><div class="_3_7SH _3DFk6 message-out"><div class="Tkt2p"><div class="copyable-text" data-pre-plain-text="[10:04 PM, 2/15/2018] +91 80983 51914: "><div class="_3zb-j ZhF0n"><span dir="ltr" class="selectable-text invisible-space copyable-text">'+msgs+'</span></div></div><div class="_2f-RV"><div class="_1DZAH" role="button"><span class="_3EFt_">'+time+'</span><div class="_32uRw"><span data-icon="msg-dblcheck-ack" class=""></span></div></div></div></div><span></span></div></div>');
+						}else{	
+							if(message.rStatus==1)
+								$('._9tCEa').append('<div class="vW7d1"><span></span><div class="_3_7SH _3DFk6 message-in"><div class="Tkt2p"><div class="copyable-text" data-pre-plain-text="[10:03 AM, 3/13/2018] Consim Nithin: "><div class="_3zb-j ZhF0n"><span dir="ltr" class="selectable-text invisible-space copyable-text">'+msgs+'</span></div></div><div class="_2f-RV"><div class="_1DZAH"><span class="_3EFt_">'+time+'</span></div></div></div><span></span></div></div>');							
+							if(message.rStatus==1 || message.rStatus==2){
+								socket.emit('MsgStatus',{uId:message.pId,pId:message.uId,msgTime:msgtime,rStatus:2,uTime:utime,appType:104},function(resp){
+								});
+							}						
+						}
+						
+					}else if(data.RC==1){					
+						var msgs = "Receiver Response is Sucess!";
+						print(msgs,utime,1);	
+					}else{
+						var sus = "Receiver Response is Error!";
+						print(sus,utime,1);	
+					}							
+				});
+				
+				socket.on('RESPSEND', function(data,callback){
+					console.log("RESPSEND====",data);
+					callback({RESPONSE:"RESPSEND Success!",uId:Loginid});
+					if(data.RC==1){
+						var msgtime = data.MSGTIME;					
+						var msgs = data.MSG;
+						var d = new Date(msgtime);
+						var time = d.toLocaleTimeString() // 1:35:07 PM
+						var day = d.toLocaleDateString()
+						if(data.SID ==Loginid && data.RID==Receiver){
+							$('._9tCEa').append('<div class="vW7d1"><span></span><div class="_3_7SH _3DFk6 message-out"><div class="Tkt2p"><div class="copyable-text" data-pre-plain-text="[10:04 PM, 2/15/2018] +91 80983 51914: "><div class="_3zb-j ZhF0n"><span dir="ltr" class="selectable-text invisible-space copyable-text">'+msgs+'</span></div></div><div class="_2f-RV"><div class="_1DZAH" role="button"><span class="_3EFt_">'+time+'</span><div class="_32uRw"><span data-icon="msg-dblcheck-ack" class=""></span></div></div></div></div><span></span></div></div>');
+						}else{	
+							$('._9tCEa').append('<div class="vW7d1"><span></span><div class="_3_7SH _3DFk6 message-in"><div class="Tkt2p"><div class="copyable-text" data-pre-plain-text="[10:03 AM, 3/13/2018] Consim Nithin: "><div class="_3zb-j ZhF0n"><span dir="ltr" class="selectable-text invisible-space copyable-text">'+msgs+'</span></div></div><div class="_2f-RV"><div class="_1DZAH"><span class="_3EFt_">'+time+'</span></div></div></div><span></span></div></div>');
+						}
+					}						
+				});
+			}
+		</script>
+	</head>	
+	<body class="web" onload='init()'>
+		<div id="app">
+			<div class="_1FKgS app-wrapper-web bFqKf">
+				<div tabindex="-1" class="app _3dqpi two">
+					<div class="MZIyP">
+						<div class="_3q4NP k1feT"><span></span></div>
+						<div class="_3q4NP _1Iexl"><span></span></div>
+						<div class="_3q4NP _2yeJ5"><span></span></div>
+					</div>
+					<div class="_3q4NP k1feT">
+						<div id="side" class="swl8g">
+							<header class="_3auIg">
+							</header>
+							<div tabindex="-1" class="_3CPl4">
+								<div class="gQzdc">
+									<button class="C28xL">
+										<div class="_1M3wR _1BC4w"><span data-icon="back-blue" class=""><img src="https://profile.tamilmatrimony.com/bmchatclient/images/chat-search-icon.gif" width="24" height="24" border="0"></span></div>
+										<div class="_1M3wR _3M2St"><span data-icon="search" class=""><img src="https://profile.tamilmatrimony.com/bmchatclient/images/chat-search-icon.gif" width="24" height="24" border="0"></span></div>
+									</button><span></span>
+									<div class="_2cLHw">Search or start new chat</div>
+									<label for="input-chatlist-search" class="_2MSJr">
+										<input type="text" id="input-chatlist-search" class="jN-F5 copyable-text selectable-text" data-tab="2" dir="auto" title="Search or start new chat" value="">
+									</label>
+								</div>
+							</div>
+							
+							<div class="_1NrpZ" id="pane-side" data-list-scroll-container="true">
+								<div tabindex="-1" data-tab="3">
+									<div class="">
+										<div class="RLfQR" style="height: 8784px; pointer-events: auto;">
+											<div id="mychat"></div>
+											
+										</div>
+									</div>
+								</div>
+							</div>							
+						</div>
+					</div>
+				
+					<div class="_3q4NP _1Iexl">
+						<div id="main" class="_1GX8_">
+							<div class="pane-chat-tile"></div>
+							
+							<header class="_3AwwN">						
+									
+							</header>
+							
+							<div class="_3zJZ2"><span></span>
+								<div class="copyable-area"><span></span><span></span>
+									<div class="show-video" style="float:left; width:200px; position:relative;"></div>
+									<div class="show-video-part" style="float:left; width:200px; position:relative; margin-left:250px;"></div>
+									<div class="_2nmDZ" tabindex="0">
+										<div class="wml2-"></div>
+										
+										<div class="_9tCEa">										
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="grGJn" style="height: 0px;"></div>
+				
+							<footer tabindex="-1" class="_2jVLL">
+								<div class="_3oju3">
+									
+									<div tabindex="-1" class="_2bXVy">								
+										<div id="send"> <input id="MSG" /><button id="SEND">Send</button></div>
+									</div>
+
+								</div>
+								<div class="_14wwJ">
+									<div class="_1fkhx">
+										<div></div>
+									</div>
+								</div>
+								<span class="_245vA"></span><span class="TSSFW"></span>
+							</footer>
+						<span></span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>	
+</html>
