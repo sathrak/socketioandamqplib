@@ -19,11 +19,48 @@
   "keywords": [
     "chat"
   ],
-  "author": "Sathrak Paldurai K",
+  "author": {"name":"Sathrak Paldurai K","email":"sathrakcallme@gmail.com"},
   "license": "MIT",
+  "contributors": [{
+      "name": "Mohan Doss",
+      "email": "Doss@gmail.com"
+   },    
+   {
+      "name": "James Jebastin",
+      "email": "jamesjebastins@gmail.com"
+   } ],   
   "bugs": {
     "url": "https://github.com/sathrak/socketioandamqplib/issues"
   },
-  "homepage": "https://github.com/sathrak/socketioandamqplib#readme"
+  "homepage": "https://github.com/sathrak/socketioandamqplib#readme",
+  "dependencies": {
+		"ejs": "2.1.4",
+		"async": "~2.3.0",		
+		"amqplib": "~0.5.2",		
+		"express": "~4.15.2",
+		"mongoose": "~5.0.3",	
+		"dateformat": "~3.0.2",
+		"basic-auth": "~1.1.0",
+		"body-parser": "~1.17.1",
+		"socket.io": "2.1.0",	
+		"redis":"2.8.0",
+		"socket.io-redis":"5.2.0"
+   },
+   "devDependencies": {
+		"ejs": "2.1.4",
+		"async": "~2.3.0",		
+		"amqplib": "~0.5.2",		
+		"express": "~4.15.2",
+		"mongoose": "~5.0.3",	
+		"dateformat": "~3.0.2",
+		"basic-auth": "~1.1.0",
+		"body-parser": "~1.17.1",
+		"socket.io": "2.1.0",	
+		"redis":"2.8.0",
+		"socket.io-redis":"5.2.0"
+   },
+   "engines": {
+      "node": ">= 0.10.0"
+   }
 }
 
