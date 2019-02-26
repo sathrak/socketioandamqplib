@@ -19,7 +19,7 @@
 		
 	Now that express is installed we can create an ./bin/server.js file that will setup our application.
 	
-	```javascript	
+	```js
 	
 		var app = require('express')();
 		var http = require('http').Server(app);
@@ -44,7 +44,7 @@
 
 		Let’s refactor our route handler to use render instead:
 		
-	```javascript
+	```js
 	
 		app.get('/', function(req, res){		
 						
@@ -57,7 +57,7 @@
 		
 		npm install --save ejs@2.6.1
 		
-	```javascript
+	```js
 	
 		app.set('views', __dirname + '/views');
 		app.set('view engine', 'ejs');
@@ -80,7 +80,7 @@
 		npm install --save socket.io
 
 		That will install the module and add the dependency to package.json. Now let’s edit client.ejs to add it:
-	```javascript
+	```js
 	
 		var app = require('express')();
 		var http = require('http').Server(app);
@@ -104,7 +104,7 @@
 	Notice that I initialize a new instance of socket.io by passing the http (the HTTP server) object. Then I listen on the connection event for incoming sockets, and I log it to the console.
 
 	Now in client.ejs I add the following snippet before the </body>:
-	```javascript
+	```html
 	
 	<script src="/socket.io/socket.io.js"></script>
 	<script>
@@ -125,7 +125,7 @@
 	If you now reload the server and the website you should see the console print “a user connected”.Try opening several tabs, and you’ll see several messages:
 	
 	Each socket also fires a special disconnect event:
-	```javascript
+	```js
 	
 	io.on('connection', function(socket){
 		console.log('a user connected');
@@ -140,7 +140,7 @@
 	The main idea behind Socket.IO is that you can send and receive any events you want, with any data you want. Any objects that can be encoded as JSON will do, and binary data is supported too.
 
 	Let’s make it so that when the user types in a message, the server gets it as a chat message event. The scripts section in client.ejs should now look as follows:
-	```javascript
+	```html
 	
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
@@ -165,7 +165,7 @@
 	```	
 	And in /bin.server.js we print out the chat message event:
 	
-	```javascript
+	```js
 	
 		io.on('connection', function(socket){
 			socket.on("Send", function(data,callback){
@@ -182,7 +182,7 @@
 		npm install --save jsonwebtoken@8.2.1
 		
 		
-	```javascript
+	```js
 	
 		io.use(function(socket, next){		
 			if (socket.handshake.query && socket.handshake.query.token){
@@ -208,7 +208,7 @@
 		
 	```	
 	### Client Side pass the tocken key and user Info
-	```javascript
+	```js
 	
 		var option = {
 			reconnect: false,
@@ -226,7 +226,7 @@
 		npm install --save redis@2.8.0
 		npm install --save socket.io-redis@5.2.0
 	
-	```javascript
+	```js
 	
 		var pub = redis.createClient(dbconfig.MREDISLBPORT, dbconfig.MREDISLBIP, { auth_pass: dbconfig.REDISPASS});
 		pub.on("error", function (err) {
@@ -294,7 +294,7 @@
 	### Connecting to RabbitMQ and creating an Exchange
 
 		For our chat application, we will create a direct exchange called chatExchange. And will be using node-amqp module to talk to RabbitMQ service.
-	```javascript
+	```js
 	
 		//Connect to RabbitMQ and get reference to the connection.		
 		var APPRABMQ;
@@ -330,7 +330,7 @@
 			/**
 			 * When a user sends a chat message, publish it to chatExchange w/o a Routing Key.		
 			 */		
-		```javascript
+		```js
 		
 			socket.on("Send", function(data,callback){								
 				var suId 	= data.uId;
@@ -370,7 +370,7 @@
 	### For our chat app,
 
 		Let's create a queue w/o any name. This forces RabbitMQ to create new queue for every socket.io connection w/ a new random queue name. Let's also set exclusive flag to ensure only this consumer can access the messages from this queue.
-		```javascript
+		```js
 		
 		//Connect the Exchange direct or fanout or topic
 		var aeok = ch.assertExchange(ex, 'direct', {durable: false});
@@ -388,7 +388,7 @@
 		
 		```
 		Lastly, create a consumer (via q.subscribe) that waits for messages from RabbitMQ. And when a message comes, send it to the browser.
-		```javascript
+		```js
 		
 			//Subscribe When a message comes, send it back to browser
 			ch.consume(q.queue, function(msg) {
@@ -407,7 +407,7 @@
 		
 	### Putting it all together.
 	
-	```javascript
+	```js
 	
 		io.on('connection', function(socket) {
 			/**
@@ -510,9 +510,6 @@
 		1. Clone this app to socketioandamqpib folder
 		2. cd socketioandamqpib
 		3. npm install & follow the below instructions to push the app to Cloud Foundry
-		
-		
-		
 		4. Once the server is up, open up multiple browsers and go to <servername>.com
 		5. Start chatting.
 
