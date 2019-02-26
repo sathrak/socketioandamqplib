@@ -1,4 +1,4 @@
-# Node.js chat server using Express, Socket IO, Redis and RabbitMQ tutorials
+# Node js chat server using Express, Socket IO, Redis and RabbitMQ
 
 ## Chat application : 
 	In this guide we’ll create a basic chat application. It requires almost no basic prior knowledge of Node.JS or Socket IO.
