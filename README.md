@@ -42,21 +42,21 @@ http.listen(3000, function(){
 
 	Let’s refactor our route handler to use render instead:
 		
-	```js	
-	app.get('/', function(req, res){	
-		res.render('client.ejs',{uid:<Sender Id>,rid:<Receiver Id>,random:<Random Number>,tokenId:'<Tocken Id>'});
-	});		
-	```
+```js	
+app.get('/', function(req, res){	
+	res.render('client.ejs',{uid:<Sender Id>,rid:<Receiver Id>,random:<Random Number>,tokenId:'<Tocken Id>'});
+});		
+```
 		
     	And set The view engine and share the image and style to client side. 
 		
 	npm install --save ejs@2.6.1
 		
-	```js	
-	app.set('views', __dirname + '/views');
-	app.set('view engine', 'ejs');
-	app.use(express.static(path.join(__dirname,'public')));		
-	```
+```js	
+app.set('views', __dirname + '/views');
+app.set('view engine', 'ejs');
+app.use(express.static(path.join(__dirname,'public')));		
+```
 		
 # Integrating Socket.IO
 
@@ -71,132 +71,134 @@ http.listen(3000, function(){
 
 	That will install the module and add the dependency to package.json. Now let’s edit client.ejs to add it:
 
-	```js	
-	var app = require('express')();
-	var http = require('http').Server(app);
-	var io = require('socket.io')(http);
+```js	
+var app = require('express')();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
 
-	app.get('/', function(req, res){
-		var data = req.query;			
-		res.render('client.ejs',{uid:<Sender Id>,rid:<Receiver Id>,random:<Random Number>,tokenId:'<Tocken Id>'});
-	});
+app.get('/', function(req, res){
+	var data = req.query;			
+	res.render('client.ejs',{uid:<Sender Id>,rid:<Receiver Id>,random:<Random Number>,tokenId:'<Tocken Id>'});
+});
 
-	io.on('connection', function(socket){
-		console.log('a user connected');
-	});
+io.on('connection', function(socket){
+	console.log('a user connected');
+});
 
-	http.listen(3000, function(){
-	  console.log('listening on *:3000');
-	});		
-		```	
-		
+http.listen(3000, function(){
+  console.log('listening on :3000');
+});		
+```
 	Notice that I initialize a new instance of socket.io by passing the http (the HTTP server) object. Then I listen on the connection event for incoming sockets, and I log it to the console.
 
 	Now in client.ejs I add the following snippet before the </body>:
-	```html	
-	<script src="/socket.io/socket.io.js"></script>
-	<script>
-		var option = {
-			reconnect: false,
-			'try multiple transports': false,
-			transports: ['websocket'],
-			'query':'token=<%= tokenId %>&ksId=<%= uid %>'
-		};
-		var socket = io.connect("localhost:3000/kschat",option);
-	</script>	
-	```	
-    That’s all it takes to load the socket.io-client, which exposes a io global, and then connect.
 
-	Notice that I’m not specifying any URL when I call io(), since it defaults to trying to connect to the host that serves the page.
-
-	If you now reload the server and the website you should see the console print “a user connected”.Try opening several tabs, and you’ll see several messages:
-	
-	Each socket also fires a special disconnect event:
-	
-	```js	
-	io.on('connection', function(socket){
-		console.log('a user connected');
-		socket.on('disconnect', function(){
-			console.log('user disconnected');
-		});
-	});	
-	```	
-## Emitting events
-
-	The main idea behind Socket.IO is that you can send and receive any events you want, with any data you want. Any objects that can be encoded as JSON will do, and binary data is supported too.
-
-	Let’s make it so that when the user types in a message, the server gets it as a chat message event. The scripts section in client.ejs should now look as follows:
-	
-	```html	
-	<script src="/socket.io/socket.io.js"></script>
-	<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-	<script>
-	  $(function () {
-		var option = {
-			reconnect: false,
-			'try multiple transports': false,
-			transports: ['websocket'],
-			'query':'token=<%= tokenId %>&ksId=<%= uid %>'
-		};
-		var socket = io.connect("localhost:3000/kschat",option);
-		$(document).on("click", "#SEND", function(){
-			var time = Math.floor(new Date().getTime()/1000);
-			socket.emit('Send',{uId:<%= uid %>,pId:<%= rid %>,msg:$("#MSG").val(),rno:random,time:time},function(resp){
-				$("#MSG").val('');
-			});
-		});	
-	  });
-	</script>		
-	```	
-	And in /bin.server.js we print out the chat message event:
-	
-	```js	
-	io.on('connection', function(socket){
-		socket.on("Send", function(data,callback){
-			console.log('message: ' + data);
-			callback({RESPONSE:"Send Emit is success."});
-
-		});
-	});		
-    	```
-# Socket IO with JWT
-	server side Token verification 
-		
-	npm install --save jsonwebtoken@8.2.1
-				
-	```js
-	io.use(function(socket, next){		
-		if (socket.handshake.query && socket.handshake.query.token){
-			try {				
-				var decoded = jwt.verify(socket.handshake.query.token, init.SECRET_KEY,{ignoreNotBefore:true});
-				if(!generic.empty(decoded.data)){
-					var jwtId = decoded.data.id;
-					socket.userid = jwtId;
-					sockets[jwtId] = socket;
-					return next();
-				}else {					
-					return next(new Error('Authentication error'));					
-				}
-			} catch(err) {				
-				return next(new Error('Authentication error'));
-			}
-		} else {
-			next(new Error('Authentication error'));
-		}    
-	}).on('connection', function(socket) {
-		// Inside create the RabbitMQ consumer
-	});		
-	```	
-### Client Side pass the tocken key and user Info
-	```js	
+```HTML
+<script src="/socket.io/socket.io"></script>
+<script>
 	var option = {
 		reconnect: false,
 		'try multiple transports': false,
 		transports: ['websocket'],
 		'query':'token=<%= tokenId %>&ksId=<%= uid %>'
 	};
-	var socket = io.connect("localhost:3000/kschat",option);		
-	```
+	var socket = io.connect("localhost:3000/kschat",option);
+</script>	
+```	
+	That’s all it takes to load the socket.io-client, which exposes a io global, and then connect.
+
+	Notice that I’m not specifying any URL when I call io(), since it defaults to trying to connect to the host that serves the page.
+
+	If you now reload the server and the website you should see the console print “a user connected”.Try opening several tabs, and you’ll see several messages:
+	
+	Each socket also fires a special disconnect event:
+
+```js	
+io.on('connection', function(socket){
+	console.log('a user connected');
+	socket.on('disconnect', function(){
+		console.log('user disconnected');
+	});
+});	
+```	
+## Emitting events
+
+	The main idea behind Socket.IO is that you can send and receive any events you want, with any data you want. Any objects that can be encoded as JSON will do, and binary data is supported too.
+
+	Let’s make it so that when the user types in a message, the server gets it as a chat message event. The scripts section in client.ejs should now look as follows:
+
+```html	
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+  $(function () {
+	var option = {
+		reconnect: false,
+		'try multiple transports': false,
+	transports: ['websocket'],
+	'query':'token=<%= tokenId %>&ksId=<%= uid %>'
+};
+var socket = io.connect("localhost:3000/kschat",option);
+$(document).on("click", "#SEND", function(){
+	var time = Math.floor(new Date().getTime()/1000);
+	socket.emit('Send',{uId:<%= uid %>,pId:<%= rid %>,msg:$("#MSG").val(),rno:random,time:time},function(resp){
+		$("#MSG").val('');
+	});
+});	
+});
+</script>		
+```	
+	And in /bin.server.js we print out the chat message event:
+	
+```js	
+io.on('connection', function(socket){
+	socket.on("Send", function(data,callback){
+		console.log('message: ' + data);
+		callback({RESPONSE:"Send Emit is success."});
+
+	});
+});		
+```
+# Socket IO with JWT
+	server side Token verification 
+		
+	npm install --save jsonwebtoken@8.2.1
+				
+```js
+io.use(function(socket, next){		
+	if (socket.handshake.query && socket.handshake.query.token){
+		try {				
+			var decoded = jwt.verify(socket.handshake.query.token, init.SECRET_KEY,{ignoreNotBefore:true});
+			if(!generic.empty(decoded.data)){
+				var jwtId = decoded.data.id;
+				socket.userid = jwtId;
+				sockets[jwtId] = socket;
+				return next();
+			}else {					
+				return next(new Error('Authentication error'));					
+			}
+		} catch(err) {				
+			return next(new Error('Authentication error'));
+		}
+	} else {
+		next(new Error('Authentication error'));
+	}    
+}).on('connection', function(socket) {
+	// Inside create the RabbitMQ consumer
+});		
+```	
+
+### Client Side pass the tocken key and user Info
+
+```js	
+var option = {
+	reconnect: false,
+	'try multiple transports': false,
+	transports: ['websocket'],
+	'query':'token=<%= tokenId %>&ksId=<%= uid %>'
+};
+var socket = io.connect("localhost:3000/kschat",option);		
+```
 ## Socket io and Redis
 		
 	First Create the redis pub/sub connection, If you need to create a redisAdapter to a redis instance that has a password, use pub/sub options instead of passing a connection string.
