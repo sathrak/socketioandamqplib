@@ -203,23 +203,23 @@ var socket = io.connect("localhost:3000/kschat",option);
 		
 	First Create the redis pub/sub connection, If you need to create a redisAdapter to a redis instance that has a password, use pub/sub options instead of passing a connection string.
 		
-		npm install --save redis@2.8.0
-		npm install --save socket.io-redis@5.2.0
+	npm install --save redis@2.8.0
+	npm install --save socket.io-redis@5.2.0
 	
-	```js	
-	var pub = redis.createClient(dbconfig.MREDISLBPORT, dbconfig.MREDISLBIP, { auth_pass: dbconfig.REDISPASS});
-	pub.on("error", function (err) {
-		console.error("Redis Pub Error " + err);
-	});
+```js	
+var pub = redis.createClient(dbconfig.MREDISLBPORT, dbconfig.MREDISLBIP, { auth_pass: dbconfig.REDISPASS});
+pub.on("error", function (err) {
+	console.error("Redis Pub Error " + err);
+});
 
-	var sub = redis.createClient(dbconfig.SREDISLBPORT, dbconfig.SREDISLBIP, { auth_pass: dbconfig.REDISPASS});
-	sub.on("error", function (err) {
-		console.error("Redis Sub Error " + err);
-	});		
+var sub = redis.createClient(dbconfig.SREDISLBPORT, dbconfig.SREDISLBIP, { auth_pass: dbconfig.REDISPASS});
+sub.on("error", function (err) {
+	console.error("Redis Sub Error " + err);
+});		
 
-	io_s.adapter(redisAdapt({ pubClient: pub, subClient: sub }));
-	var io = io_s.of('/kschat');		
-	```	
+io_s.adapter(redisAdapt({ pubClient: pub, subClient: sub }));
+var io = io_s.of('/kschat');		
+```	
 	By running socket.io with the socket.io-redis adapter you can run multiple socket.io instances in different processes or servers that can all broadcast and emit events to and from each other.
 		
 # Introduction to RabbitMQ
@@ -258,10 +258,10 @@ var socket = io.connect("localhost:3000/kschat",option);
 
 ### Exchanges can be of 4 types:
 
-		1. Direct - Sends messages from producer to consumer if Routing Key and Binding key match exactly.
-		2. Fanout - Sends any message from a producer to ALL consumers (i.e ignores both routing key & binding key)
-		3. Topic - Sends a message from producer to consumer based on pattern-matching.
-		4. Headers - If more complicated routing is required beyond simple Routing key string, you can use headers exchange.
+	1. Direct - Sends messages from producer to consumer if Routing Key and Binding key match exactly.
+	2. Fanout - Sends any message from a producer to ALL consumers (i.e ignores both routing key & binding key)
+	3. Topic - Sends a message from producer to consumer based on pattern-matching.
+	4. Headers - If more complicated routing is required beyond simple Routing key string, you can use headers exchange.
 
 	In RabbitMQ the combination of the type of Exchange, Routing Key and Binding Key make it behave completely differently. For example: A Fanout Exchange ignores Routing Key and Binding Key and sends messages to all queues. A Topic Exchange sends a copy of a message to zero, one or more consumers based on RabbitMQ patterns (#, *).
 
@@ -273,32 +273,32 @@ var socket = io.connect("localhost:3000/kschat",option);
 
 	For our chat application, we will create a direct exchange called chatExchange. And will be using node-amqp module to talk to RabbitMQ service.
 		
-	```js	
-	//Connect to RabbitMQ and get reference to the connection.		
-	var APPRABMQ;
-	var start = +new Date();
-	amqplib.connect('amqp://admin:admin@localhost:5672?heartbeat=60').then(function(conn) {			
-		APPRABMQ = conn.createChannel();	
-		var end = +new Date();
-		console.log("Rabbit MQ Connection Time " + (end-start) + " milliseconds");
+```js	
+//Connect to RabbitMQ and get reference to the connection.		
+var APPRABMQ;
+var start = +new Date();
+amqplib.connect('amqp://admin:admin@localhost:5672?heartbeat=60').then(function(conn) {			
+	APPRABMQ = conn.createChannel();	
+	var end = +new Date();
+	console.log("Rabbit MQ Connection Time " + (end-start) + " milliseconds");
 
-		conn.on("error", function(err) {
-			if (err.message !== "Connection closing") {
-				console.error("Rabbit MQ Connection error", err.message);
-			}
-		});
+	conn.on("error", function(err) {
+		if (err.message !== "Connection closing") {
+			console.error("Rabbit MQ Connection error", err.message);
+		}
+	});
 
-		conn.on("close", function() {
-			console.error("Rabbit MQ reconnecting");
-			process.exit();
-		});
-	}).then(null, console.warn);
+	conn.on("close", function() {
+		console.error("Rabbit MQ reconnecting");
+		process.exit();
+	});
+}).then(null, console.warn);
 
 
-	//Connect the Exchange direct or fanout or topic
-	var ex = 'direct_logs';	
-	var aeok = ch.assertExchange(ex, 'direct', {durable: false});		
-	```	
+//Connect the Exchange direct or fanout or topic
+var ex = 'direct_logs';	
+var aeok = ch.assertExchange(ex, 'direct', {durable: false});		
+```	
 ### Creating Producers (So Users can send chat messages)
 
 	In our chat app, users are both producers(i.e. sends chat messages to others) and also consumers (i.e. receives messages from others). Let's focus on users being 'producers'.
@@ -307,7 +307,101 @@ var socket = io.connect("localhost:3000/kschat",option);
 	/**
 	 * When a user sends a chat message, publish it to chatExchange w/o a Routing Key.		
 	 */		
-	```js		
+```js		
+socket.on("Send", function(data,callback){								
+	var suId 	= data.uId;
+	var spId   	= data.pId;						
+	var smsg 	= data.msg;
+	var srno 	= data.rno;
+	var msgTime = generic.millisecTime();	
+
+	callback({RESPONSE:"Send Emit is success.",uId:suId});		
+	var qmsg = JSON.stringify({uId:suId,pId:spId,msg:smsg,rStatus:1,msgTime:msgTime});			
+	if(APPRABMQ){				
+		var key = 'ks_'+spId;				
+		APPRABMQ.then(function(ch) {						
+			var ex = 'direct_logs';	
+			ch.on('return', function(msg) {
+				console.log('Message returned:',msg);
+			});									
+
+			ch.publish(ex, key, new Buffer(qmsg), {deliveryMode: 2, mandatory: true}, function() {
+				console.error('Message processed');
+			});
+		});			
+	} else {
+		socket.emit('RESPSEND',{RC:1,ER:2},function(sresp){});
+	}
+});			
+``` 
+### Creating Consumers (So Users can receive chat messages)
+
+	Creating consumers involves 3 steps:
+
+		1. Create a queue with some options.
+		2. Bind queue to exchange using some "Binding Key"
+		3. Create a subscriber (usually a callback function) to actually obtain messages sent to the queue.
+
+### For our chat app,
+
+	Let's create a queue w/o any name. This forces RabbitMQ to create new queue for every socket.io connection w/ a new random queue name. Let's also set exclusive flag to ensure only this consumer can access the messages from this queue.
+
+```js		
+//Connect the Exchange direct or fanout or topic
+var aeok = ch.assertExchange(ex, 'direct', {durable: false});
+
+var aqok = ch.assertQueue('',{exclusive: true});					
+```
+	Then bind the queue to chatExchange with an empty 'Binding key' and listen to ALL messages.
+
+```js		
+var ex = 'direct_logs';						
+var key = 'ks_12345';
+//Bind to chatExchange w/ "#" or "" binding key to listen to all messages.
+ch.bindQueue(q.queue, ex, key);		
+```
+	Lastly, create a consumer (via q.subscribe) that waits for messages from RabbitMQ. And when a message comes, send it to the browser.
+```js		
+//Subscribe When a message comes, send it back to browser
+ch.consume(q.queue, function(msg) {
+	if (msg !== null) {										
+		var encodemsg = msg.content.toString();
+		var quemsg = JSON.parse(encodemsg);
+		if(!generic.empty(quemsg)){
+			socket.emit('RESPRECEIVER',{RC:1,ER:0,MSG:[quemsg]},function(rresp){});
+		} 							
+	} else {
+		socket.emit('RESPRECEIVER',{RC:1,ER:0},function(rresp){});
+	}
+}, {noAck: true});			
+```
+
+### Putting it all together.
+
+```js	
+io.on('connection', function(socket) {
+	/**
+	 * When a socket connection is disconnect, That time Routing Key based unbind or delete the Queue. 
+	 */	
+	socket.on('disconnect', function () {			
+		sockcnt = sockcnt - 1;
+		console.error(socket.userid,"Member Disconnect - Socket Count :",socket.id);
+		if(socket.userid && socket.queueid){
+			var key = socket.queueid;
+			APPRABMQ.then(function(ch) {
+				var ex = 'direct_logs';
+				var queue_pat = 'ks_'+socket.userid;										
+				var aqok = ch.unbindQueue(key,ex,queue_pat);
+				aqok.then(function(q) {
+					ch.deleteQueue(key);
+				});
+			});				
+		}	
+	}); 
+
+	/**
+	 * When a user sends a chat message, publish it to chatExchange w/o a Routing Key.		
+	 */		
 	socket.on("Send", function(data,callback){								
 		var suId 	= data.uId;
 		var spId   	= data.pId;						
@@ -317,7 +411,8 @@ var socket = io.connect("localhost:3000/kschat",option);
 
 		callback({RESPONSE:"Send Emit is success.",uId:suId});		
 		var qmsg = JSON.stringify({uId:suId,pId:spId,msg:smsg,rStatus:1,msgTime:msgTime});			
-		if(APPRABMQ){				
+		if(APPRABMQ){
+			socket.emit('RESPSEND',{RC:1,ER:0,SID:suId,RID:spId,MSG:smsg,RANDOMNO:srno,MSGTIME:msgTime,STATUS:1},function(sresp){});
 			var key = 'ks_'+spId;				
 			APPRABMQ.then(function(ch) {						
 				var ex = 'direct_logs';	
@@ -332,148 +427,53 @@ var socket = io.connect("localhost:3000/kschat",option);
 		} else {
 			socket.emit('RESPSEND',{RC:1,ER:2},function(sresp){});
 		}
-	});			
-	``` 
-### Creating Consumers (So Users can receive chat messages)
-
-	Creating consumers involves 3 steps:
-
-		1. Create a queue with some options.
-		2. Bind queue to exchange using some "Binding Key"
-		3. Create a subscriber (usually a callback function) to actually obtain messages sent to the queue.
-
-### For our chat app,
-
-	Let's create a queue w/o any name. This forces RabbitMQ to create new queue for every socket.io connection w/ a new random queue name. Let's also set exclusive flag to ensure only this consumer can access the messages from this queue.
-
-	```js		
-	//Connect the Exchange direct or fanout or topic
-	var aeok = ch.assertExchange(ex, 'direct', {durable: false});
-
-	var aqok = ch.assertQueue('',{exclusive: true});					
-	```
-	Then bind the queue to chatExchange with an empty 'Binding key' and listen to ALL messages.
-
-	```js		
-	var ex = 'direct_logs';						
-	var key = 'ks_12345';
-	//Bind to chatExchange w/ "#" or "" binding key to listen to all messages.
-	ch.bindQueue(q.queue, ex, key);		
-	```
-	Lastly, create a consumer (via q.subscribe) that waits for messages from RabbitMQ. And when a message comes, send it to the browser.
-	```js		
-	//Subscribe When a message comes, send it back to browser
-	ch.consume(q.queue, function(msg) {
-		if (msg !== null) {										
-			var encodemsg = msg.content.toString();
-			var quemsg = JSON.parse(encodemsg);
-			if(!generic.empty(quemsg)){
-				socket.emit('RESPRECEIVER',{RC:1,ER:0,MSG:[quemsg]},function(rresp){});
-			} 							
-		} else {
-			socket.emit('RESPRECEIVER',{RC:1,ER:0},function(rresp){});
-		}
-	}, {noAck: true});			
-	```
-
-### Putting it all together.
-
-	```js	
-	io.on('connection', function(socket) {
-		/**
-		 * When a socket connection is disconnect, That time Routing Key based unbind or delete the Queue. 
-		 */	
-		socket.on('disconnect', function () {			
-			sockcnt = sockcnt - 1;
-			console.error(socket.userid,"Member Disconnect - Socket Count :",socket.id);
-			if(socket.userid && socket.queueid){
-				var key = socket.queueid;
-				APPRABMQ.then(function(ch) {
-					var ex = 'direct_logs';
-					var queue_pat = 'ks_'+socket.userid;										
-					var aqok = ch.unbindQueue(key,ex,queue_pat);
-					aqok.then(function(q) {
-						ch.deleteQueue(key);
-					});
-				});				
-			}	
-		}); 
-
-		/**
-		 * When a user sends a chat message, publish it to chatExchange w/o a Routing Key.		
-		 */		
-		socket.on("Send", function(data,callback){								
-			var suId 	= data.uId;
-			var spId   	= data.pId;						
-			var smsg 	= data.msg;
-			var srno 	= data.rno;
-			var msgTime = generic.millisecTime();	
-
-			callback({RESPONSE:"Send Emit is success.",uId:suId});		
-			var qmsg = JSON.stringify({uId:suId,pId:spId,msg:smsg,rStatus:1,msgTime:msgTime});			
-			if(APPRABMQ){
-				socket.emit('RESPSEND',{RC:1,ER:0,SID:suId,RID:spId,MSG:smsg,RANDOMNO:srno,MSGTIME:msgTime,STATUS:1},function(sresp){});
-				var key = 'ks_'+spId;				
-				APPRABMQ.then(function(ch) {						
-					var ex = 'direct_logs';	
-					ch.on('return', function(msg) {
-						console.log('Message returned:',msg);
-					});									
-
-					ch.publish(ex, key, new Buffer(qmsg), {deliveryMode: 2, mandatory: true}, function() {
-						console.error('Message processed');
-					});
-				});			
-			} else {
-				socket.emit('RESPSEND',{RC:1,ER:2},function(sresp){});
-			}
-		});
+	});
 
 
-		/**
-		 * Initialize subscriber queue.
-		 * 1. First Connect the set the Exchange name direct or fanout or topic
-		 * 2. First create a queue w/o any name. This forces RabbitMQ to create new queue for every socket.io connection w/ a new random queue name.
-		 * 3. Then bind the queue to chatExchange  w/ "#" or "" 'Binding key' and listen to ALL messages
-		 * 4. Lastly, create a consumer (via .consume) that waits for messages from RabbitMQ. And when
-		 * a message comes, send it to the browser.
-		 *
-		 * Note: we are creating this w/in io.on('connection'..) to create NEW queue for every connection
-		 */
-		var ruserId = socket.userid;
-		if(APPRABMQ && ruserId){
-			var ex = 'direct_logs';						
-			var key = 'ks_'+ruserId;					
-			APPRABMQ.then(function(ch) {
-				//Connect the Exchange direct or fanout or topic
-				var aeok = ch.assertExchange(ex, 'direct', {durable: false});
-				aeok.then(function() {						
-					var aqok = ch.assertQueue('',{exclusive: true});
-					aqok.then(function(q) {
-						socket.queueid = q.queue;
-						//Bind to chatExchange w/ "#" or "" binding key to listen to all messages.
-						ch.bindQueue(q.queue, ex, key);
-						//Subscribe When a message comes, send it back to browser
-						ch.consume(q.queue, function(msg) {
-							if (msg !== null) {										
-								var encodemsg = msg.content.toString();
-								var quemsg = JSON.parse(encodemsg);
-								if(!generic.empty(quemsg)){
-									socket.emit('RESPRECEIVER',{RC:1,ER:0,MSG:[quemsg]},function(rresp){});
-								} 							
-							} else {
-								socket.emit('RESPRECEIVER',{RC:1,ER:0},function(rresp){});
-							}
-						}, {noAck: true});
-					});
+	/**
+	 * Initialize subscriber queue.
+	 * 1. First Connect the set the Exchange name direct or fanout or topic
+	 * 2. First create a queue w/o any name. This forces RabbitMQ to create new queue for every socket.io connection w/ a new random queue name.
+	 * 3. Then bind the queue to chatExchange  w/ "#" or "" 'Binding key' and listen to ALL messages
+	 * 4. Lastly, create a consumer (via .consume) that waits for messages from RabbitMQ. And when
+	 * a message comes, send it to the browser.
+	 *
+	 * Note: we are creating this w/in io.on('connection'..) to create NEW queue for every connection
+	 */
+	var ruserId = socket.userid;
+	if(APPRABMQ && ruserId){
+		var ex = 'direct_logs';						
+		var key = 'ks_'+ruserId;					
+		APPRABMQ.then(function(ch) {
+			//Connect the Exchange direct or fanout or topic
+			var aeok = ch.assertExchange(ex, 'direct', {durable: false});
+			aeok.then(function() {						
+				var aqok = ch.assertQueue('',{exclusive: true});
+				aqok.then(function(q) {
+					socket.queueid = q.queue;
+					//Bind to chatExchange w/ "#" or "" binding key to listen to all messages.
+					ch.bindQueue(q.queue, ex, key);
+					//Subscribe When a message comes, send it back to browser
+					ch.consume(q.queue, function(msg) {
+						if (msg !== null) {										
+							var encodemsg = msg.content.toString();
+							var quemsg = JSON.parse(encodemsg);
+							if(!generic.empty(quemsg)){
+								socket.emit('RESPRECEIVER',{RC:1,ER:0,MSG:[quemsg]},function(rresp){});
+							} 							
+						} else {
+							socket.emit('RESPRECEIVER',{RC:1,ER:0},function(rresp){});
+						}
+					}, {noAck: true});
 				});
-			});					
-		} else{
-			console.error("APP - Receiver RabbitMQ Connection is Empty:"+ruserId);
-			socket.emit('RESPRECEIVER',{RC:1,ER:2},function(rresp){});
-		}				
-	});		
-	```
+			});
+		});					
+	} else{
+		console.error("APP - Receiver RabbitMQ Connection is Empty:"+ruserId);
+		socket.emit('RESPRECEIVER',{RC:1,ER:2},function(rresp){});
+	}				
+});		
+```
 # Running / Testing it on Cloud Foundry
 
 	1. Clone this app to socketioandamqpib folder
