@@ -303,10 +303,7 @@ var aeok = ch.assertExchange(ex, 'direct', {durable: false});
 
 	In our chat app, users are both producers(i.e. sends chat messages to others) and also consumers (i.e. receives messages from others). Let's focus on users being 'producers'.
 
-	When a user sends a chat message, publish it to chatExchange w/o a Routing Key (Routing Key doesn't matter because chatExchange is a 'fanout').
-	/**
-	 * When a user sends a chat message, publish it to chatExchange w/o a Routing Key.		
-	 */		
+	When a user sends a chat message, publish it to chatExchange w/o a Routing Key based.
 ```js		
 socket.on("Send", function(data,callback){								
 	var suId 	= data.uId;
