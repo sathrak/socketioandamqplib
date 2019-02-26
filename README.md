@@ -1,14 +1,14 @@
 # Node.js chat server using Express, Socket IO, Redis and RabbitMQ tutorials
 
 ## Chat application : 
-	In this guide we’ll create a basic chat application. It requires almost no basic prior knowledge of Node.JS or Socket.IO.
+	In this guide we’ll create a basic chat application. It requires almost no basic prior knowledge of Node.JS or Socket IO.
 		
 ### Introduction
 	Sockets have traditionally been the solution around which most realtime chat systems are architected, providing a bi-directional communication channel between a client and a server.
 
 	This means that the server can push messages to clients. Whenever you write a chat message, the idea is that the server will get it and push it to all other connected clients.	
 	
-###The web framework
+### The web framework
 	The first goal is to setup a simple HTML webpage that serves out a form and a list of messages. We’re going to use the Node.JS web framework express to this end. 	
 		
 	First let’s create a package.json manifest file that describes our project.
