@@ -19,7 +19,7 @@
 		
 	Now that express is installed we can create an ./bin/server.js file that will setup our application.
 	
-```javascript
+```js
 var app = require('express')();
 var http = require('http').Server(app);
 
